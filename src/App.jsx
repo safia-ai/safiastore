@@ -1,20 +1,28 @@
-import { useState } from 'react';
+import { useState, useContext } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import './App.css';
 import ProductCard from './produit';
 import ProductDetailsPage from './ProductDetailsPage';
-import Dashboard from './dashboard';
 import Piedpage from './footer';
+import CartPage from './CartPage';
+import LoginPage from './LoginPage';
+import RegisterPage from './RegisterPage';
+import CheckoutPage from './CheckoutPage';
+import NotFoundPage from './NotFoundPage';
+import { CartProvider, CartContext } from './CartContext';
+import { AuthProvider, AuthContext } from './AuthContext';
 
-function App() {
+function MainApp() {
   const navigate = useNavigate();
   const location = useLocation();
+
+  const { addToCart, nbItems } = useContext(CartContext);
+  const { user, logout } = useContext(AuthContext);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Tous');
   const [maxPrice, setMaxPrice] = useState('');
   const [sortBy, setSortBy] = useState('default');
-  const [cartCount, setCartCount] = useState(0);
 
   const categories = ['Tous', 'Audio', 'Gaming', 'Bureau', 'Accessoires'];
 
@@ -64,7 +72,12 @@ function App() {
   ];
 
   const handleAddToCart = (productId, qty = 1) => {
-    setCartCount((prev) => prev + qty);
+    const product = productsList.find((p) => p.id === Number(productId));
+    if (product) {
+      for (let i = 0; i < qty; i++) {
+        addToCart(product);
+      }
+    }
   };
 
   const filteredProducts = productsList.filter((product) => {
@@ -101,18 +114,16 @@ function App() {
           >
             Produits
           </button>
-          <button 
-            className={`nav-btn-link ${location.pathname === '/dashboard' ? 'active' : ''}`} 
-            onClick={() => navigate('/dashboard')}
-          >
-            Dashboard
-          </button>
         </nav>
 
-        <div className="nav-actions">
-          <button className="btn-nav" style={{ position: 'relative' }}>
+        <div className="nav-actions" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <button 
+            className="btn-nav" 
+            style={{ position: 'relative' }} 
+            onClick={() => navigate('/panier')}
+          >
             🛒 Panier
-            {cartCount > 0 && (
+            {nbItems > 0 && (
               <span style={{
                 position: 'absolute',
                 top: '-8px',
@@ -124,15 +135,26 @@ function App() {
                 padding: '2px 6px',
                 fontWeight: 'bold'
               }}>
-                {cartCount}
+                {nbItems}
               </span>
             )}
           </button>
-          <button className="btn-nav">👤 Connexion</button>
+
+          {user ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontWeight: '600', color: '#1e293b', fontSize: '0.9rem' }}>👤 {user.nom}</span>
+              <button className="btn-nav" onClick={logout} style={{ color: '#ef4444', borderColor: '#ef4444', cursor: 'pointer' }}>
+                Déconnexion
+              </button>
+            </div>
+          ) : (
+            <button className="btn-nav" onClick={() => navigate('/login')}>👤 Connexion</button>
+          )}
+
         </div>
       </header>
 
-      {/* الرابط التوجيهي (Routes) */}
+      {/* Routes */}
       <Routes>
         {/* الصفحة الرئيسية */}
         <Route path="/" element={
@@ -168,7 +190,6 @@ function App() {
         {/* صفحة كل المنتجات */}
         <Route path="/produits" element={
           <main className="products-container">
-            {/* شريط البحث */}
             <div className="search-wrapper">
               <div className="search-tabs">
                 {categories.map((cat) => (
@@ -276,14 +297,21 @@ function App() {
           </main>
         } />
 
-        {/* المسار الديناميكي لصفحة تفاصيل المنتج بالـ ID */}
+        {/* تفاصيل المنتج */}
         <Route 
           path="/produit/:id" 
           element={<ProductDetailsPage products={productsList} onAddToCart={handleAddToCart} />} 
         />
 
-        {/* مسار Dashboard */}
-        <Route path="/dashboard" element={<Dashboard />} />
+        {/* السلة */}
+        <Route path="/panier" element={<CartPage />} />
+
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/checkout" element={<CheckoutPage />} />
+
+        {/* صفحة 404 */}
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
 
       <Piedpage />
@@ -291,4 +319,12 @@ function App() {
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <AuthProvider>
+      <CartProvider>
+        <MainApp />
+      </CartProvider>
+    </AuthProvider>
+  );
+}

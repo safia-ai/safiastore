@@ -1,147 +1,117 @@
-import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { ShoppingCart, Star, ShieldCheck, Truck, ArrowLeft, CheckCircle2, RotateCcw } from 'lucide-react';
+import React, { useContext, useState } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { CartContext } from './CartContext';
 import './ProductDetailsPage.css';
 
-function ProductDetailsPage({ products = [], onAddToCart }) {
+export default function ProductDetailsPage({ products = [], onAddToCart }) {
   const { id } = useParams();
-  const navigate = useNavigate();
-  const [quantity, setQuantity] = useState(1);
-  const [selectedWilaya, setSelectedWilaya] = useState('Skikda');
+  const { addToCart } = useContext(CartContext);
+  const [added, setAdded] = useState(false);
 
-  // البحث عن المنتج المطابق للـ id
-  const product = products.find((p) => String(p.id) === String(id));
+  const produit = products.find((p) => p.id === Number(id));
 
-  if (!product) {
+  if (!produit) {
     return (
-      <div className="product-not-found">
-        <h2>Produit introuvable !</h2>
-        <p>Le produit avec l'ID #{id} n'existe pas ou a été supprimé.</p>
-        <button className="btn-back" onClick={() => navigate('/produits')}>
-          <ArrowLeft size={18} /> Retour au catalogue
-        </button>
+      <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+        <h2>Produit introuvable</h2>
+        <Link to="/produits" style={{ color: '#2563eb', textDecoration: 'none' }}>
+          ← Retour à la boutique
+        </Link>
       </div>
     );
   }
 
-  return (
-    <div className="details-container">
-      {/* زر الرجوع */}
-      <button className="btn-back-link" onClick={() => navigate(-1)}>
-        <ArrowLeft size={18} /> Retour
-      </button>
+  const handleAdd = () => {
+    if (onAddToCart) {
+      onAddToCart(produit.id, 1);
+    } else if (addToCart) {
+      addToCart(produit);
+    }
+    setAdded(true);
+    setTimeout(() => setAdded(false), 3000);
+  };
 
-      <div className="product-details-grid">
-        {/* القسم الأيسر: الصورة والشارات */}
-        <div className="details-image-box">
-          {product.discount && (
-            <span className="badge-promo-detail">-{product.discount}% PROMO</span>
-          )}
-          <img src={product.image} alt={product.title} className="main-product-img" />
+  const price = produit.price || produit.prix || 0;
+  const oldPrice = produit.oldPrice || produit.ancienPrix;
+  const name = produit.title || produit.nom;
+
+  return (
+    <div style={{ maxWidth: '1000px', margin: '40px auto', padding: '0 20px' }}>
+      <Link to="/produits" style={{ color: '#64748b', textDecoration: 'none', fontSize: '0.9rem', display: 'inline-block', marginBottom: '24px' }}>
+        ← Retour aux produits
+      </Link>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '40px', alignItems: 'start' }}>
+        <div>
+          <img 
+            src={produit.image} 
+            alt={name} 
+            style={{ width: '100%', borderRadius: '12px', objectFit: 'cover', border: '1px solid #e2e8f0' }} 
+          />
         </div>
 
-        {/* القسم الأيمن: المعلومات والطلب */}
-        <div className="details-info-box">
-          <span className="product-category-tag">{product.category}</span>
-          <h1 className="details-title">{product.title}</h1>
+        <div>
+          <span style={{ display: 'inline-block', backgroundColor: '#e2e8f0', color: '#475569', fontSize: '0.8rem', padding: '4px 10px', borderRadius: '20px', marginBottom: '12px' }}>
+            {produit.category || 'Électronique'}
+          </span>
+          <h1 style={{ fontSize: '2rem', color: '#0f172a', marginBottom: '12px' }}>{name}</h1>
 
-          {/* التقييم */}
-          <div className="details-rating">
-            <div className="stars">
-              <Star size={16} fill="#f59e0b" color="#f59e0b" />
-              <span>{product.rating || 4.8}</span>
-            </div>
-            <span className="reviews-text">• 56 avis vérifiés</span>
-            <span className="stock-status">
-              <CheckCircle2 size={16} color="#10b981" /> En Stock
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '14px', marginBottom: '20px' }}>
+            <span style={{ fontSize: '1.75rem', fontWeight: 'bold', color: '#2563eb' }}>
+              {price.toLocaleString('fr-DZ')} DZD
             </span>
-          </div>
-
-          {/* السعر */}
-          <div className="details-price-wrapper">
-            <span className="current-price">{product.price} DZD</span>
-            {product.oldPrice && (
-              <span className="old-price">{product.oldPrice} DZD</span>
+            {oldPrice && (
+              <span style={{ fontSize: '1.1rem', color: '#94a3b8', textDecoration: 'line-through' }}>
+                {oldPrice.toLocaleString('fr-DZ')} DZD
+              </span>
             )}
           </div>
 
-          {/* الوصف التفصيلي */}
-          <div className="details-description">
-            <h3>Description :</h3>
-            <p>{product.description}</p>
-            <ul className="product-specs-list">
-              <li>✔️ Produit 100% Original & Authentique</li>
-              <li>✔️ Garantie officielle 12 mois</li>
-              <li>✔️ Câble de charge et accessoires inclus</li>
-            </ul>
-          </div>
+          <p style={{ color: '#475569', lineHeight: '1.6', marginBottom: '30px' }}>
+            {produit.description}
+          </p>
 
-          {/* تحديد الكمية والأزرار */}
-          <div className="actions-box">
-            <div className="quantity-selector">
-              <button onClick={() => setQuantity((q) => Math.max(1, q - 1))}>-</button>
-              <span>{quantity}</span>
-              <button onClick={() => setQuantity((q) => q + 1)}>+</button>
+          <button 
+            onClick={handleAdd}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '10px',
+              width: '100%',
+              backgroundColor: '#2563eb',
+              color: '#ffffff',
+              border: 'none',
+              padding: '14px 24px',
+              borderRadius: '8px',
+              fontSize: '1rem',
+              fontWeight: 'bold',
+              cursor: 'pointer'
+            }}
+          >
+            🛒 Ajouter au panier
+          </button>
+
+          {added && (
+            <div style={{
+              marginTop: '16px',
+              padding: '12px 16px',
+              backgroundColor: '#dcfce7',
+              border: '1px solid #bbf7d0',
+              borderRadius: '8px',
+              color: '#15803d',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <span>✅ Produit ajouté avec succès !</span>
+              <Link to="/panier" style={{ fontWeight: 'bold', color: '#15803d', textDecoration: 'underline' }}>
+                Voir le panier
+              </Link>
             </div>
-
-            <button 
-              className="btn-add-cart"
-              onClick={() => onAddToCart && onAddToCart(product.id, quantity)}
-            >
-              <ShoppingCart size={18} /> Ajouter au panier ({quantity * product.price} DZD)
-            </button>
-          </div>
-
-          {/* قسم التوصيل لـ 58 ولاية */}
-          <div className="delivery-card">
-            <h3>🚚 Détails de Livraison (58 Wilayas)</h3>
-            
-            <div className="wilaya-select-group">
-              <label>Calculer la livraison pour votre wilaya :</label>
-              <select 
-                value={selectedWilaya} 
-                onChange={(e) => setSelectedWilaya(e.target.value)}
-              >
-                <option value="Skikda">21 - Skikda (400 DZD - 24h)</option>
-                <option value="Alger">16 - Alger (500 DZD - 24-48h)</option>
-                <option value="Constantine">25 - Constantine (400 DZD - 24h)</option>
-                <option value="Annaba">23 - Annaba (400 DZD - 24h)</option>
-                <option value="Oran">31 - Oran (600 DZD - 48h)</option>
-                <option value="Autre">Autres Wilayas (600 à 900 DZD)</option>
-              </select>
-            </div>
-
-            <div className="delivery-perks">
-              <div className="perk-item">
-                <Truck size={20} color="#2563eb" />
-                <div>
-                  <strong>Livraison à domicile ou Stop Desk</strong>
-                  <p>Réception sous 24 à 48 heures</p>
-                </div>
-              </div>
-
-              <div className="perk-item">
-                <ShieldCheck size={20} color="#10b981" />
-                <div>
-                  <strong>Paiement à la livraison</strong>
-                  <p>Ouvrez et vérifiez votre colis avant de payer</p>
-                </div>
-              </div>
-
-              <div className="perk-item">
-                <RotateCcw size={20} color="#f59e0b" />
-                <div>
-                  <strong>Retour garanti</strong>
-                  <p>Échange ou remboursement sous 7 jours</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
+          )}
         </div>
       </div>
     </div>
   );
 }
-
-export default ProductDetailsPage;
