@@ -35,6 +35,12 @@ function Navbar() {
         >
           Dashboard
         </button>
+        <button 
+          className={`nav-btn-link ${location.pathname === '/admin' ? 'active' : ''}`} 
+          onClick={() => navigate('/admin')}
+        >
+          Admin
+        </button>
       </nav>
 
       <div className="nav-actions">
